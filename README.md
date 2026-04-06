@@ -8,7 +8,7 @@ This project builds upon the original AIGVDet research and extends it with perfo
 
 ---
 
-## Overview
+## I)Overview
 
 The rise of AI-generated (deepfake) videos has created a need for robust detection systems.
 The original AIGVDet framework addresses this by analyzing both:
@@ -22,7 +22,7 @@ The original AIGVDet framework addresses this by analyzing both:
 ---
 
 
-## Original Research Contributions (AIGVDet)
+## II)Original Research Contributions (AIGVDet)
 
 The base framework introduces a **spatio-temporal anomaly detection pipeline** consisting of:
 
@@ -47,13 +47,13 @@ The base framework introduces a **spatio-temporal anomaly detection pipeline** c
 * Improves generalization across different generation methods
 
 ---
-## Network Architecture
+## III)Network Architecture
 
 <img width="9600" height="2848" alt="image" src="https://github.com/user-attachments/assets/16b1d4c2-5d1a-45e8-8d0f-188377859ed7" />
 
 ---
 
-## Enhancements in AIGVDetPlus
+## IV)Enhancements in AIGVDetPlus
 
 ### 1. Performance Optimization
 
@@ -123,7 +123,7 @@ The base framework introduces a **spatio-temporal anomaly detection pipeline** c
 
 ---
 
-## 📊 Performance Comparison (Baseline vs AIGVDetPlus)
+## V)Performance Comparison (Baseline vs AIGVDetPlus)
 
 | Aspect                 | Original AIGVDet                 | AIGVDetPlus (Your Version)                      |
 | ---------------------- | -------------------------------- | ----------------------------------------------- |
@@ -137,7 +137,7 @@ The base framework introduces a **spatio-temporal anomaly detection pipeline** c
 
 ---
 
-## Estimated Efficiency Gains 
+## VI)Estimated Efficiency Gains 
 
 ### 1. Frame Sampling
 
@@ -170,7 +170,7 @@ Frame sampling × resolution scaling:
 * Memory usage: **~50–75% reduction**
 
 
-## Tech Stack
+## VII)Tech Stack
 
 * **Python 3.10+**
 * **PyTorch**
@@ -180,7 +180,7 @@ Frame sampling × resolution scaling:
 
 ---
 
-## Installation
+## VIII)Installation
 
 ```bash
 git clone https://github.com/Shreyas-Sherekar/AIGVDetPlus
@@ -190,7 +190,7 @@ pip install -r requirements.txt
 
 ---
 
-## Model Weights Setup
+## IX)Model Weights Setup
 
 Download and place the following:
 
@@ -202,7 +202,7 @@ Download and place the following:
 
 ---
 
-## Running the Application
+## X)Running the Application
 
 For best results use T4 GPU in google colab.
 
@@ -220,7 +220,7 @@ http://localhost:5000
 
 
 
-## References
+## XI)References
 
 * Original Implementation:
   [https://github.com/multimediaFor/AIGVDet](https://github.com/multimediaFor/AIGVDet)
@@ -230,13 +230,13 @@ http://localhost:5000
 
 ---
 
-## 👨‍💻 Author
+## XII)Author
 
 **Shreyas Sherekar**
 
 ---
 
-## ⭐ Acknowledgment
+## XIII)Acknowledgment
 
 This project builds upon the original AIGVDet research and aims to make it more accessible, efficient, and deployable.
 
