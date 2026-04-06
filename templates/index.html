@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AIGVDet — AI Video Detector</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #080c10;
+      --surface:   #0e1318;
+      --border:    #1d2730;
+      --accent:    #00e5ff;
+      --accent2:   #ff3c5f;
+      --text:      #d8e8f0;
+      --muted:     #5a7080;
+      --font-mono: 'Space Mono', monospace;
+      --font-body: 'DM Sans', sans-serif;
+      --radius:    6px;
+      --glow:      0 0 24px rgba(0,229,255,.18);
+    }
+
+    html { font-size: 16px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,0,0,.06) 2px, rgba(0,0,0,.06) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .grid-bg {
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    /* ── GPU badge ─────────────────────────────────────────────────────── */
+    .gpu-badge {
+      position: fixed;
+      top: 16px; right: 16px;
+      background: rgba(0,229,255,.08);
+      border: 1px solid rgba(0,229,255,.2);
+      border-radius: 99px;
+      padding: 5px 12px;
+      font-family: var(--font-mono);
+      font-size: .68rem;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      z-index: 100;
+      animation: fadeDown .6s ease both .8s;
+    }
+    .gpu-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; } 50% { opacity: .3; }
+    }
+
+    .page {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 60px 24px 120px;
+      position: relative;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 64px;
+      animation: fadeDown .6s ease both;
+    }
+
+    .logo-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .logo-icon {
+      width: 36px; height: 36px;
+      position: relative;
+    }
+    .logo-icon::before, .logo-icon::after {
+      content: '';
+      position: absolute;
+      border: 2px solid var(--accent);
+      border-radius: 3px;
+    }
+    .logo-icon::before { inset: 0; }
+    .logo-icon::after  { inset: 6px; transform: rotate(45deg); border-color: var(--accent2); }
+
+    header h1 {
+      font-family: var(--font-mono);
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      letter-spacing: .08em;
+      color: #fff;
+    }
+    header h1 span { color: var(--accent); }
+
+    .tagline {
+      font-size: .9rem;
+      color: var(--muted);
+      letter-spacing: .04em;
+      font-family: var(--font-mono);
+      margin-top: 8px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      animation: fadeUp .5s ease both;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 28px;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 10px 20px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: .8rem;
+      letter-spacing: .06em;
+      cursor: pointer;
+      position: relative;
+      transition: color .2s;
+    }
+    .tab-btn.active { color: var(--accent); }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .input-row { display: flex; gap: 10px; }
+    .input-row input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: .85rem;
+      padding: 12px 16px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .input-row input:focus { border-color: var(--accent); box-shadow: var(--glow); }
+    .input-row input::placeholder { color: var(--muted); }
+
+    .hint {
+      margin-top: 10px;
+      font-size: .78rem;
+      color: var(--muted);
+      font-family: var(--font-mono);
+    }
+
+    .dropzone {
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      position: relative;
+    }
+    .dropzone:hover, .dropzone.drag-over {
+      border-color: var(--accent);
+      background: rgba(0,229,255,.03);
+    }
+    .dropzone input[type=file] {
+      position: absolute; inset: 0;
+      opacity: 0; cursor: pointer;
+      width: 100%; height: 100%;
+    }
+    .dropzone-icon { font-size: 2.4rem; margin-bottom: 12px; }
+    .dropzone p { color: var(--muted); font-size: .9rem; }
+    .dropzone p strong { color: var(--text); }
+    .file-name {
+      margin-top: 12px;
+      font-family: var(--font-mono);
+      font-size: .8rem;
+      color: var(--accent);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: var(--radius);
+      font-family: var(--font-mono);
+      font-size: .82rem;
+      letter-spacing: .06em;
+      cursor: pointer;
+      border: none;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+      font-weight: 700;
+      box-shadow: 0 0 16px rgba(0,229,255,.25);
+    }
+    .btn-primary:hover {
+      background: #33eaff;
+      box-shadow: 0 0 28px rgba(0,229,255,.45);
+      transform: translateY(-1px);
+    }
+    .btn-primary:disabled {
+      opacity: .4; cursor: not-allowed;
+      transform: none; box-shadow: none;
+    }
+    .btn-block { width: 100%; justify-content: center; margin-top: 20px; }
+
+    /* ── Progress ──────────────────────────────────────────────────────── */
+    #status-box { margin-top: 28px; display: none; }
+
+    .progress-track {
+      height: 3px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+      border-radius: 99px;
+      width: 0%;
+      transition: width .4s ease;
+      animation: shimmer 1.5s infinite;
+    }
+    @keyframes shimmer {
+      0%,100% { filter: brightness(1); } 50% { filter: brightness(1.5); }
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .status-text {
+      font-family: var(--font-mono);
+      font-size: .78rem;
+      color: var(--muted);
+    }
+    .eta-text {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: .72rem;
+      color: var(--muted);
+    }
+
+    /* ── Result ────────────────────────────────────────────────────────── */
+    #result-box { margin-top: 28px; display: none; }
+
+    .result-verdict {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 24px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg);
+      animation: pop .4s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    @keyframes pop {
+      from { transform: scale(.92); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    .verdict-icon { font-size: 2.8rem; flex-shrink: 0; animation: spinIn .5s ease both; }
+    @keyframes spinIn {
+      from { transform: rotate(-180deg) scale(0); }
+      to   { transform: rotate(0) scale(1); }
+    }
+
+    .verdict-label {
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .verdict-label.ai     { color: var(--accent2); text-shadow: 0 0 16px rgba(255,60,95,.4); }
+    .verdict-label.human  { color: #2ecc71;        text-shadow: 0 0 16px rgba(46,204,113,.4); }
+    .verdict-label.unknown{ color: var(--muted); }
+    .verdict-sub { font-size: .85rem; color: var(--muted); }
+
+    .score-bar-wrap { margin-top: 20px; }
+    .score-label {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .score-track { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .score-fill { height: 100%; border-radius: 99px; transition: width 1s cubic-bezier(.22,1,.36,1); }
+    .score-fill.ai    { background: linear-gradient(90deg, #ff3c5f, #ff8c00); }
+    .score-fill.human { background: linear-gradient(90deg, #2ecc71, #00e5ff); }
+
+    .raw-log { margin-top: 20px; }
+    .raw-log summary {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+      padding: 6px 0;
+    }
+    .raw-log pre {
+      margin-top: 10px;
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      color: #5a9;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .error-box {
+      padding: 16px 20px;
+      background: rgba(255,60,95,.08);
+      border: 1px solid rgba(255,60,95,.3);
+      border-radius: var(--radius);
+      color: #ff8095;
+      font-family: var(--font-mono);
+      font-size: .8rem;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+
+    /* ── Ngrok warning banner ──────────────────────────────────────────── */
+    #ngrok-banner {
+      display: none;
+      margin-bottom: 20px;
+      padding: 12px 16px;
+      background: rgba(255,200,0,.07);
+      border: 1px solid rgba(255,200,0,.25);
+      border-radius: var(--radius);
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      color: #ffc800;
+      line-height: 1.7;
+    }
+
+    .footer-note {
+      text-align: center;
+      margin-top: 48px;
+      font-size: .75rem;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      line-height: 1.8;
+    }
+    .footer-note a { color: var(--accent); text-decoration: none; }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 520px) {
+      .input-row { flex-direction: column; }
+      .card { padding: 22px 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+
+  <!-- GPU badge — populated by JS health check -->
+  <div class="gpu-badge" id="gpu-badge" style="display:none">
+    <div class="gpu-dot"></div>
+    <span id="gpu-label">GPU</span>
+  </div>
+
+  <div class="page">
+    <header>
+      <div class="logo-bar">
+        <div class="logo-icon"></div>
+        <h1>AIGV<span>Det</span></h1>
+      </div>
+      <p class="tagline">// AI-GENERATED VIDEO DETECTOR · SPATIAL-TEMPORAL ANOMALY ANALYSIS</p>
+    </header>
+
+    <!-- ngrok first-visit warning -->
+    <div id="ngrok-banner">
+      ⚡ Running via Google Colab + ngrok tunnel.<br>
+      If this is your first visit, you may need to click "Visit Site" on the ngrok interstitial page first.
+    </div>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="url">VIDEO URL</button>
+        <button class="tab-btn" data-tab="upload">FILE UPLOAD</button>
+      </div>
+
+      <!-- URL Tab -->
+      <div class="tab-panel active" id="tab-url">
+        <div class="input-row">
+          <input type="url" id="url-input"
+            placeholder="https://youtube.com/watch?v=...  or direct .mp4 link"/>
+          <button class="btn btn-primary" id="url-submit-btn" onclick="submitURL()">
+            ANALYZE
+          </button>
+        </div>
+        <p class="hint">Supports YouTube, Twitter/X, TikTok, direct MP4/AVI/MKV links via yt-dlp.</p>
+      </div>
+
+      <!-- Upload Tab -->
+      <div class="tab-panel" id="tab-upload">
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="file-input" accept=".mp4,.avi,.mov,.mkv,.webm,.flv"
+            onchange="handleFileSelect(this)"/>
+          <div class="dropzone-icon">📹</div>
+          <p><strong>Drop a video here</strong><br>or click to browse</p>
+          <p style="margin-top:8px;font-size:.75rem;">MP4 · AVI · MOV · MKV · WebM · FLV — max 500 MB</p>
+          <div class="file-name" id="file-name-label"></div>
+        </div>
+        <button class="btn btn-primary btn-block" id="upload-submit-btn"
+          onclick="submitUpload()" disabled>
+          ANALYZE VIDEO
+        </button>
+      </div>
+
+      <!-- Progress -->
+      <div id="status-box">
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill" style="width:15%"></div>
+        </div>
+        <div class="status-row">
+          <span class="status-text" id="status-text">Initializing…</span>
+          <span class="eta-text" id="eta-text"></span>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div id="result-box"></div>
+    </div>
+
+    <p class="footer-note">
+      Powered by
+      <a href="https://github.com/multimediaFor/AIGVDet" target="_blank">AIGVDet</a>
+      · "AI-Generated Video Detection via Spatial-Temporal Anomaly Learning" (PRCV 2024)<br>
+      Running on Google Colab · For research use only.
+    </p>
+  </div>
+
+  <script>
+    // ── Detect ngrok environment & show banner ───────────────────────────
+    if (location.hostname.includes('ngrok')) {
+      document.getElementById('ngrok-banner').style.display = 'block';
+    }
+
+    // ── Health check — show GPU badge ────────────────────────────────────
+    fetch('/health').then(r => r.json()).then(data => {
+      const badge = document.getElementById('gpu-badge');
+      const label = document.getElementById('gpu-label');
+      if (data.cuda_available && data.gpu !== 'none') {
+        label.textContent = '⚡ ' + data.gpu.replace('NVIDIA ', '');
+        badge.style.display = 'flex';
+      }
+    }).catch(() => {});
+
+    // ── Tab switching ────────────────────────────────────────────────────
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn, .tab-panel').forEach(el => el.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        resetUI();
+      });
+    });
+
+    // ── Dropzone ─────────────────────────────────────────────────────────
+    const dropzone = document.getElementById('dropzone');
+    dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+    dropzone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropzone.classList.remove('drag-over');
+      const f = e.dataTransfer.files[0];
+      if (f) {
+        document.getElementById('file-input').files = e.dataTransfer.files;
+        handleFileSelect({ files: e.dataTransfer.files });
+      }
+    });
+
+    function handleFileSelect(input) {
+      const f = input.files[0];
+      if (!f) return;
+      document.getElementById('file-name-label').textContent = `✓ ${f.name}`;
+      document.getElementById('upload-submit-btn').disabled = false;
+      resetUI();
+    }
+
+    // ── Submit URL ───────────────────────────────────────────────────────
+    async function submitURL() {
+      const url = document.getElementById('url-input').value.trim();
+      if (!url) return alert('Please enter a video URL.');
+      resetUI();
+      document.getElementById('url-submit-btn').disabled = true;
+      showStatus('Sending request…', 10);
+      try {
+        const r = await fetch('/analyze/url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Server error');
+        pollJob(data.job_id);
+      } catch (e) {
+        showError(e.message);
+        document.getElementById('url-submit-btn').disabled = false;
+      }
+    }
+
+    // ── Submit upload ────────────────────────────────────────────────────
+    async function submitUpload() {
+      const fileInput = document.getElementById('file-input');
+      if (!fileInput.files[0]) return;
+      resetUI();
+      document.getElementById('upload-submit-btn').disabled = true;
+      showStatus('Uploading to Colab…', 10);
+      const fd = new FormData();
+      fd.append('video', fileInput.files[0]);
+      try {
+        const r = await fetch('/analyze/upload', { method: 'POST', body: fd });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Upload failed');
+        showStatus('Upload complete. Starting GPU analysis…', 22);
+        pollJob(data.job_id);
+      } catch (e) {
+        showError(e.message);
+        document.getElementById('upload-submit-btn').disabled = false;
+      }
+    }
+
+    // ── Poll job ─────────────────────────────────────────────────────────
+    let pollTimer = null;
+    let startTime = null;
+
+    function pollJob(jid) {
+      startTime = Date.now();
+      let ticks = 0;
+      const steps = [22, 35, 50, 65, 78, 88, 93, 96];
+
+      pollTimer = setInterval(async () => {
+        try {
+          const r = await fetch(`/job/${jid}`);
+          const job = await r.json();
+          const elapsed = Math.round((Date.now() - startTime) / 1000);
+          const etaText = elapsed > 5 ? `${elapsed}s elapsed` : '';
+
+          if (job.status === 'queued') {
+            showStatus('Queued for analysis…', steps[0], etaText);
+          } else if (job.status === 'downloading') {
+            showStatus('Downloading video…', steps[1], etaText);
+          } else if (job.status === 'running') {
+            const p = steps[Math.min(ticks + 2, steps.length - 1)];
+            showStatus(job.progress || 'Running GPU model…', p, etaText);
+          } else if (job.status === 'done') {
+            clearInterval(pollTimer);
+            showResult(job.result);
+          } else if (job.status === 'error') {
+            clearInterval(pollTimer);
+            showError(job.error || 'Unknown error');
+            enableInputs();
+          }
+          ticks++;
+        } catch { /* network hiccup */ }
+      }, 1500);
+    }
+
+    // ── UI helpers ───────────────────────────────────────────────────────
+    function showStatus(msg, pct, eta = '') {
+      document.getElementById('status-box').style.display = 'block';
+      document.getElementById('status-text').textContent = msg;
+      document.getElementById('progress-fill').style.width = pct + '%';
+      document.getElementById('eta-text').textContent = eta;
+      document.getElementById('result-box').style.display = 'none';
+    }
+
+    function showResult(result) {
+      document.getElementById('status-box').style.display = 'none';
+      const box = document.getElementById('result-box');
+      box.style.display = 'block';
+
+      const isAI  = result.is_ai;
+      const conf  = result.confidence;
+      const icon  = isAI === true ? '🤖' : isAI === false ? '✅' : '❔';
+      const cls   = isAI === true ? 'ai' : isAI === false ? 'human' : 'unknown';
+      const title = isAI === true ? 'AI-GENERATED' : isAI === false ? 'LIKELY REAL' : 'INCONCLUSIVE';
+      const sub   = isAI === true
+        ? 'Spatial-temporal anomalies detected — AI generation likely.'
+        : isAI === false
+        ? 'No significant AI artifacts detected.'
+        : 'Could not determine. Check raw output below.';
+      const confPct = conf != null ? Math.round(conf * 100) : null;
+
+      box.innerHTML = `
+        <div class="result-verdict">
+          <div class="verdict-icon">${icon}</div>
+          <div>
+            <div class="verdict-label ${cls}">${title}</div>
+            <div class="verdict-sub">${sub}</div>
+          </div>
+        </div>
+        ${conf != null ? `
+        <div class="score-bar-wrap">
+          <div class="score-label">
+            <span>AI CONFIDENCE</span><span>${confPct}%</span>
+          </div>
+          <div class="score-track">
+            <div class="score-fill ${cls}" id="score-fill" style="width:0%"></div>
+          </div>
+        </div>` : ''}
+        ${result.raw ? `
+        <details class="raw-log">
+          <summary>▸ Show raw model output</summary>
+          <pre>${escHtml(result.raw)}</pre>
+        </details>` : ''}
+        <button class="btn btn-primary" style="margin-top:20px;font-size:.75rem;"
+          onclick="resetUI();enableInputs()">← ANALYZE ANOTHER</button>
+      `;
+
+      if (conf != null) {
+        requestAnimationFrame(() => setTimeout(() => {
+          document.getElementById('score-fill').style.width = confPct + '%';
+        }, 50));
+      }
+    }
+
+    function showError(msg) {
+      document.getElementById('status-box').style.display = 'none';
+      const box = document.getElementById('result-box');
+      box.style.display = 'block';
+      box.innerHTML = `
+        <div class="error-box">⚠ ${escHtml(msg)}</div>
+        <button class="btn btn-primary" style="margin-top:16px;font-size:.75rem;"
+          onclick="resetUI();enableInputs()">← TRY AGAIN</button>
+      `;
+    }
+
+    function resetUI() {
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+      document.getElementById('status-box').style.display = 'none';
+      document.getElementById('result-box').style.display = 'none';
+    }
+
+    function enableInputs() {
+      document.getElementById('url-submit-btn').disabled = false;
+      document.getElementById('upload-submit-btn').disabled =
+        document.getElementById('file-input').files.length === 0;
+    }
+
+    function escHtml(s) {
+      return String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  </script>
+</body>
+</html>

@@ -1,3 +1,134 @@
+import os
+import sys
+import torch
+
+# ── Device auto-detection (TPU > GPU > CPU) ───────────────────────────
+try:
+    import torch_xla.core.xla_model as xm
+    DEVICE = xm.xla_device()
+    print(f'[INFO] Using TPU: {DEVICE}')
+except ImportError:
+    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f'[INFO] Using: {DEVICE}')
+
+# ── Memory optimizations ──────────────────────────────────────────────
+os.environ['PYTORCH_ALLOC_CONF'] = 'expandable_segments:True'
+if str(DEVICE) != 'cpu':
+    try:
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.benchmark = True
+    except:
+        pass
+
+# ── Speed config ──────────────────────────────────────────────────────
+FRAME_SAMPLE_RATE = 3    # process every Nth frame
+MAX_FRAMES        = 200  # max frames to analyze
+RESIZE_TO         = 640  # downscale longest side before RAFT
+
+import sys
+import torch
+
+# ── Device auto-detection (TPU > GPU > CPU) ───────────────────────────
+try:
+    import torch_xla.core.xla_model as xm
+    DEVICE = xm.xla_device()
+    print(f'[INFO] Using TPU: {DEVICE}')
+except ImportError:
+    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f'[INFO] Using: {DEVICE}')
+
+# ── Memory optimizations ──────────────────────────────────────────────
+os.environ['PYTORCH_ALLOC_CONF'] = 'expandable_segments:True'
+if str(DEVICE) != 'cpu':
+    try:
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.benchmark = True
+    except:
+        pass
+
+# ── Speed config ──────────────────────────────────────────────────────
+FRAME_SAMPLE_RATE = 3    # process every Nth frame
+MAX_FRAMES        = 200  # max frames to analyze
+RESIZE_TO         = 640  # downscale longest side before RAFT
+
+import sys
+import torch
+
+# ── Device auto-detection (TPU > GPU > CPU) ───────────────────────────
+try:
+    import torch_xla.core.xla_model as xm
+    DEVICE = xm.xla_device()
+    print(f'[INFO] Using TPU: {DEVICE}')
+except ImportError:
+    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f'[INFO] Using: {DEVICE}')
+
+# ── Memory optimizations ──────────────────────────────────────────────
+os.environ['PYTORCH_ALLOC_CONF'] = 'expandable_segments:True'
+if str(DEVICE) != 'cpu':
+    try:
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.benchmark = True
+    except:
+        pass
+
+# ── Speed config ──────────────────────────────────────────────────────
+FRAME_SAMPLE_RATE = 3    # process every Nth frame
+MAX_FRAMES        = 200  # max frames to analyze
+RESIZE_TO         = 640  # downscale longest side before RAFT
+
+import sys
+import torch
+
+# ── Device auto-detection (TPU > GPU > CPU) ───────────────────────────
+try:
+    import torch_xla.core.xla_model as xm
+    DEVICE = xm.xla_device()
+    print(f'[INFO] Using TPU: {DEVICE}')
+except ImportError:
+    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f'[INFO] Using: {DEVICE}')
+
+# ── Memory optimizations ──────────────────────────────────────────────
+os.environ['PYTORCH_ALLOC_CONF'] = 'expandable_segments:True'
+if str(DEVICE) != 'cpu':
+    try:
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.benchmark = True
+    except:
+        pass
+
+# ── Speed config ──────────────────────────────────────────────────────
+FRAME_SAMPLE_RATE = 3    # process every Nth frame
+MAX_FRAMES        = 200  # max frames to analyze
+RESIZE_TO         = 640  # downscale longest side before RAFT
+
+import sys
+import torch
+
+# ── Device auto-detection (TPU > GPU > CPU) ───────────────────────────
+try:
+    import torch_xla.core.xla_model as xm
+    DEVICE = xm.xla_device()
+    print(f'[INFO] Using TPU: {DEVICE}')
+except ImportError:
+    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f'[INFO] Using: {DEVICE}')
+
+# ── Memory optimizations ──────────────────────────────────────────────
+os.environ['PYTORCH_ALLOC_CONF'] = 'expandable_segments:True'
+if str(DEVICE) != 'cpu':
+    try:
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.benchmark = True
+    except:
+        pass
+
+# ── Speed config ──────────────────────────────────────────────────────
+FRAME_SAMPLE_RATE = 3    # process every Nth frame
+MAX_FRAMES        = 200  # max frames to analyze
+RESIZE_TO         = 640  # downscale longest side before RAFT
+
 import sys
 import argparse
 import os
@@ -24,8 +155,9 @@ from sklearn.metrics import accuracy_score, average_precision_score, roc_auc_sco
 
 
 
-DEVICE = 'cuda'
-# DEVICE = 'cpu'  # Changed to 'cpu'
+import torch as _torch
+DEVICE = 'cuda' if _torch.cuda.is_available() else 'cpu'
+print(f'[INFO] Using device: {DEVICE}')
 
 
 def load_image(imfile):
@@ -44,9 +176,9 @@ def viz(img, flo, folder_optical_flow_path, imfile1):
 
 
     # print(folder_optical_flow_path)
-    parts=imfile1.rsplit('\\',1)
-    content=parts[1]
-    folder_optical_flow_path=folder_optical_flow_path+'/'+content.strip()
+    import os
+    content = os.path.basename(imfile1)
+    folder_optical_flow_path = os.path.join(folder_optical_flow_path, content.strip())
     print(folder_optical_flow_path)
     cv2.imwrite(folder_optical_flow_path, flo)
 
@@ -54,25 +186,36 @@ def viz(img, flo, folder_optical_flow_path, imfile1):
 def video_to_frames(video_path, output_folder):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-    
+
     cap = cv2.VideoCapture(video_path)
+    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    sample_rate = max(FRAME_SAMPLE_RATE, total // MAX_FRAMES)
+    print(f'[OPT] Total frames: {total}, using every {sample_rate}th → ~{total//sample_rate} frames')
+
     frame_count = 0
-    
+    saved_count = 0
+
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
-        
-        frame_filename = os.path.join(output_folder, f"frame_{frame_count:05d}.png")
-        cv2.imwrite(frame_filename, frame)
+        if frame_count % sample_rate == 0:
+            h, w = frame.shape[:2]
+            if max(h, w) > RESIZE_TO:
+                scale = RESIZE_TO / max(h, w)
+                frame = cv2.resize(frame, (int(w*scale), int(h*scale)),
+                                   interpolation=cv2.INTER_AREA)
+            frame_filename = os.path.join(output_folder, f"frame_{saved_count:05d}.png")
+            cv2.imwrite(frame_filename, frame)
+            saved_count += 1
         frame_count += 1
-    
+
     cap.release()
+    print(f'[OPT] Saved {saved_count} frames to {output_folder}')
 
     images = glob.glob(os.path.join(output_folder, '*.png')) + \
              glob.glob(os.path.join(output_folder, '*.jpg'))
     images = sorted(images)
-    
     return images
 
 
@@ -89,7 +232,7 @@ def OF_gen(args):
         os.makedirs(args.folder_optical_flow_path)
         print(f'{args.folder_optical_flow_path}')
 
-    with torch.no_grad():
+    with torch.no_grad(), torch.cuda.amp.autocast(enabled=True):
 
         images = video_to_frames(args.path, args.folder_original_path)
         images = natsorted(images)
@@ -188,7 +331,7 @@ if __name__ == '__main__':
         if not args.use_cpu:
             in_tens = in_tens.cuda()
                         
-        with torch.no_grad():
+        with torch.no_grad(), torch.cuda.amp.autocast(enabled=True):
             prob = model_or(in_tens).sigmoid().item()
             original_prob_sum+=prob
                             
@@ -211,7 +354,7 @@ if __name__ == '__main__':
         if not args.use_cpu:
             in_tens = in_tens.cuda()
 
-        with torch.no_grad():
+        with torch.no_grad(), torch.cuda.amp.autocast(enabled=True):
             prob = model_op(in_tens).sigmoid().item()
             optical_prob_sum+=prob
 
@@ -221,7 +364,9 @@ if __name__ == '__main__':
                     
     predict=original_predict*0.5+optical_predict*0.5
     print(f"predict:{predict}")
-    if predict<args.threshold:
+    if predict < args.threshold:
         print("Real video")
+        print(f"Prediction: REAL score: {predict:.4f}")
     else:
         print("Fake video")
+        print(f"Prediction: FAKE score: {predict:.4f}")

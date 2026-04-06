@@ -1,0 +1,12 @@
+
+checkpoints/
+raft_model/
+*.pth
+web_uploads/
+web_frames/
+web_optical/
+web_results/
+__pycache__/
+*.pyc
+.env
+venv/
