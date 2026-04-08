@@ -125,7 +125,7 @@ The base framework introduces a **spatio-temporal anomaly detection pipeline** c
 
 ## V)Performance Comparison (Baseline vs AIGVDetPlus)
 
-| Aspect                 | Original AIGVDet                 | AIGVDetPlus (Your Version)                      |
+| Aspect                 | Original AIGVDet                 | AIGVDetPlus                                     |
 | ---------------------- | -------------------------------- | ----------------------------------------------- |
 | **Frame Processing**   | Full video frames                | Frame sampling (↓ compute)                      |
 | **Resolution**         | Original resolution              | Downscaled frames (↓ memory + speed ↑)          |
@@ -232,7 +232,7 @@ http://localhost:5000
 
 ## XII)Author
 
-**Shreyas Sherekar**
+**Shreyas Milind Sherekar**
 
 ---
 
